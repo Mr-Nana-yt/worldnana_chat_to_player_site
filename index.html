@@ -2,36 +2,122 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Welcome</title>
+  <title>Welcome Snake</title>
   <style>
     body {
       margin: 0;
       background-color: #111;
       color: orange;
-      font-family: Arial, sans-serif;
-      height: 100vh;
+      font-family: monospace;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
+      height: 100vh;
+      overflow: hidden;
     }
 
     h1 {
-      font-size: 4rem;
+      font-size: 3.5rem;
+      margin-top: 40px;
       text-shadow: 0 0 10px orange;
       animation: flicker 2s infinite;
     }
 
     @keyframes flicker {
-      0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
-        opacity: 1;
-      }
-      20%, 24%, 55% {
-        opacity: 0.4;
-      }
+      0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 1; }
+      20%, 24%, 55% { opacity: 0.4; }
+    }
+
+    canvas {
+      background-color: #222;
+      border: 3px solid orange;
+      margin-top: auto;
+      margin-bottom: 40px;
     }
   </style>
 </head>
 <body>
   <h1>Welcome</h1>
+
+  <canvas id="game" width="400" height="400"></canvas>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+
+    const gridSize = 20;
+    let snake = [{ x: 200, y: 200 }];
+    let direction = 'right';
+    let apple = randomApple();
+    let gameOver = false;
+
+    function randomApple() {
+      return {
+        x: Math.floor(Math.random() * (canvas.width / gridSize)) * gridSize,
+        y: Math.floor(Math.random() * (canvas.height / gridSize)) * gridSize
+      };
+    }
+
+    document.addEventListener('keydown', e => {
+      const key = e.key;
+      if (key === 'ArrowUp' && direction !== 'down') direction = 'up';
+      if (key === 'ArrowDown' && direction !== 'up') direction = 'down';
+      if (key === 'ArrowLeft' && direction !== 'right') direction = 'left';
+      if (key === 'ArrowRight' && direction !== 'left') direction = 'right';
+    });
+
+    function gameLoop() {
+      if (gameOver) return;
+
+      const head = { ...snake[0] };
+
+      switch (direction) {
+        case 'up': head.y -= gridSize; break;
+        case 'down': head.y += gridSize; break;
+        case 'left': head.x -= gridSize; break;
+        case 'right': head.x += gridSize; break;
+      }
+
+      // Проверка на смерть
+      if (
+        head.x < 0 || head.x >= canvas.width ||
+        head.y < 0 || head.y >= canvas.height ||
+        snake.some(segment => segment.x === head.x && segment.y === head.y)
+      ) {
+        gameOver = true;
+      }
+
+      snake.unshift(head);
+
+      // Съел яблоко
+      if (head.x === apple.x && head.y === apple.y) {
+        apple = randomApple();
+      } else {
+        snake.pop();
+      }
+
+      // Отрисовка
+      ctx.fillStyle = '#222';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // яблоко
+      ctx.fillStyle = 'red';
+      ctx.fillRect(apple.x, apple.y, gridSize, gridSize);
+
+      // змейка
+      ctx.fillStyle = 'lime';
+      for (const segment of snake) {
+        ctx.fillRect(segment.x, segment.y, gridSize, gridSize);
+      }
+
+      if (gameOver) {
+        ctx.fillStyle = 'red';
+        ctx.font = '30px monospace';
+        ctx.fillText('Game Over', 110, 200);
+      }
+    }
+
+    setInterval(gameLoop, 100);
+  </script>
 </body>
 </html>
