@@ -46,10 +46,18 @@
     const ctx = canvas.getContext('2d');
 
     const gridSize = 20;
-    let snake = [{ x: 200, y: 200 }];
+    let snake = [];
     let direction = 'right';
-    let apple = randomApple();
+    let apple = {};
     let gameOver = false;
+    let restartCountdown = 0;
+
+    function resetGame() {
+      snake = [{ x: 200, y: 200 }];
+      direction = 'right';
+      apple = randomApple();
+      gameOver = false;
+    }
 
     function randomApple() {
       return {
@@ -59,15 +67,31 @@
     }
 
     document.addEventListener('keydown', e => {
-      const key = e.key;
-      if (key === 'ArrowUp' && direction !== 'down') direction = 'up';
-      if (key === 'ArrowDown' && direction !== 'up') direction = 'down';
-      if (key === 'ArrowLeft' && direction !== 'right') direction = 'left';
-      if (key === 'ArrowRight' && direction !== 'left') direction = 'right';
+      const key = e.key.toLowerCase();
+
+      if ((key === 'arrowup' || key === 'w') && direction !== 'down') direction = 'up';
+      if ((key === 'arrowdown' || key === 's') && direction !== 'up') direction = 'down';
+      if ((key === 'arrowleft' || key === 'a') && direction !== 'right') direction = 'left';
+      if ((key === 'arrowright' || key === 'd') && direction !== 'left') direction = 'right';
     });
 
+    function drawCountdown(seconds) {
+      ctx.fillStyle = 'orange';
+      ctx.font = '30px monospace';
+      ctx.fillText(`Restarting in ${seconds}...`, 100, 200);
+    }
+
     function gameLoop() {
-      if (gameOver) return;
+      if (gameOver) {
+        if (restartCountdown > 0) {
+          ctx.fillStyle = '#222';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          drawCountdown(restartCountdown);
+        } else {
+          resetGame();
+        }
+        return;
+      }
 
       const head = { ...snake[0] };
 
@@ -78,46 +102,48 @@
         case 'right': head.x += gridSize; break;
       }
 
-      // Проверка на смерть
       if (
         head.x < 0 || head.x >= canvas.width ||
         head.y < 0 || head.y >= canvas.height ||
         snake.some(segment => segment.x === head.x && segment.y === head.y)
       ) {
         gameOver = true;
+        restartCountdown = 3;
+        countdown();
+        return;
       }
 
       snake.unshift(head);
 
-      // Съел яблоко
       if (head.x === apple.x && head.y === apple.y) {
         apple = randomApple();
       } else {
         snake.pop();
       }
 
-      // Отрисовка
       ctx.fillStyle = '#222';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // яблоко
       ctx.fillStyle = 'red';
       ctx.fillRect(apple.x, apple.y, gridSize, gridSize);
 
-      // змейка
       ctx.fillStyle = 'lime';
       for (const segment of snake) {
         ctx.fillRect(segment.x, segment.y, gridSize, gridSize);
       }
-
-      if (gameOver) {
-        ctx.fillStyle = 'red';
-        ctx.font = '30px monospace';
-        ctx.fillText('Game Over', 110, 200);
-      }
     }
 
-    setInterval(gameLoop, 100);
+    function countdown() {
+      const interval = setInterval(() => {
+        restartCountdown--;
+        if (restartCountdown <= 0) {
+          clearInterval(interval);
+        }
+      }, 1000);
+    }
+
+    resetGame();
+    setInterval(gameLoop, 150);
   </script>
 </body>
 </html>
